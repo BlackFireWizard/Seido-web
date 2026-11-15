@@ -59,10 +59,9 @@
         a, button { touch-action: manipulation; }
         header a:last-child,
         button[onclick^="copyText"] { min-height: 44px; }
-        button[onclick^="copyText"] { min-width: 88px; }
 
         /* iOS zoomt bei Eingabefeldern unter 16px automatisch rein */
-        input[type="text"] { font-size: 16px !important; }
+        input[type="text"] { font-size: 17px !important; }
 
         /* Auf Touch-Geraeten kein haengender Hover-Zustand, dafuer klares Tipp-Feedback */
         @media (hover: none) {
@@ -70,7 +69,35 @@
         }
 
         /* Lange Adressen und Mailadressen sauber umbrechen */
-        a[href^="mailto"], #previewDomain, #previewEmail { overflow-wrap: anywhere; }
+        #previewDomain, #previewEmail { overflow-wrap: anywhere; }
+
+        /* Eingabefeld: deutlich als Schreibfeld erkennbar */
+        .domain-field {
+            border: 2px solid #3D6B52;
+            box-shadow: 0 2px 0 rgba(61,107,82,0.12);
+        }
+        .domain-field:focus-within {
+            border-color: #315742;
+            box-shadow: 0 0 0 4px rgba(61,107,82,0.18);
+        }
+        @keyframes fieldPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(61,107,82,0.35); }
+            50%      { box-shadow: 0 0 0 7px rgba(61,107,82,0); }
+        }
+        .domain-field.pulse { animation: fieldPulse 2.2s ease-in-out infinite; }
+        .fake-caret {
+            width: 2px; height: 26px; background: #3D6B52; border-radius: 1px;
+            margin-right: -8px; flex-shrink: 0;
+            animation: caretBlink 1s steps(1) infinite;
+        }
+        .domain-field.active .fake-caret { display: none; }
+        @keyframes caretBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+        @keyframes tapBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        .tap-hint { animation: tapBounce 1.6s ease-in-out infinite; }
+        .tap-hint.done { animation: none; opacity: 0.55; }
+        #resultCards > div { transition: opacity .25s ease; }
+        #resultCards.result-idle > div { opacity: 0.5; }
+        @media (prefers-reduced-motion: reduce) { .domain-field.pulse, .tap-hint, .fake-caret { animation: none; } }
 
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
@@ -138,17 +165,43 @@
                 </p>
 
                 <!-- Live-Tester Kasten -->
-                <div class="mt-8 bg-sand border border-warmborder rounded-2xl p-6 sm:p-8">
-                    <label for="businessNameInput" class="block text-[14px] font-medium text-ink mb-2">
-                        Ihr Name, Beruf oder Firmenname:
-                    </label>
-                    <input type="text"
-                           id="businessNameInput"
-                           placeholder="z. B. Bäckerei Müller, Thomas Weber oder Physiotherapie"
-                           autocomplete="off" autocapitalize="words" enterkeyhint="done" spellcheck="false"
-                           class="w-full px-4 py-3.5 rounded-xl bg-white border border-warmborder text-ink placeholder:text-muted/60 text-[15px] focus:outline-none focus:border-sage transition-colors">
+                <div class="mt-8 bg-sand border border-warmborder rounded-2xl p-5 sm:p-8">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="w-7 h-7 shrink-0 rounded-full bg-sage text-white text-[14px] font-semibold flex items-center justify-center">1</span>
+                        <label for="businessNameInput" class="text-[16px] sm:text-[17px] font-semibold text-ink leading-snug">
+                            Tippen Sie hier Ihren Namen oder Betrieb ein
+                        </label>
+                    </div>
 
-                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <!-- Hinweis-Pfeil: "Hier tippen" -->
+                    <div class="tap-hint inline-flex items-center gap-2 mb-2 px-3.5 py-1.5 rounded-full bg-sage text-white text-[14px] font-semibold">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+                        Hier tippen
+                    </div>
+
+                    <!-- Schreibfeld: ganze Fläche antippbar, blinkender Cursor, Tastatur-Symbol -->
+                    <label id="fieldWrap" for="businessNameInput" class="domain-field pulse flex items-center gap-3 bg-white rounded-2xl pl-4 pr-3 min-h-[64px] cursor-text transition-shadow">
+                        <svg class="w-6 h-6 shrink-0 text-sage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="2" y="6" width="20" height="12" rx="2"/>
+                            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>
+                        </svg>
+                        <span class="fake-caret" aria-hidden="true"></span>
+                        <input type="text"
+                               id="businessNameInput"
+                               placeholder="Ihren Namen eintippen"
+                               autocomplete="off" autocapitalize="words" enterkeyhint="done" spellcheck="false"
+                               class="flex-1 min-w-0 py-4 bg-transparent text-ink placeholder:text-muted/70 focus:outline-none">
+                    </label>
+                    <p class="mt-2.5 text-[14px] leading-[1.5] text-muted">
+                        Tippen Sie auf das weiße Feld. Es öffnet sich die Tastatur, und Ihr Ergebnis erscheint sofort darunter.
+                    </p>
+
+                    <div class="mt-7 flex items-center gap-3">
+                        <span class="w-7 h-7 shrink-0 rounded-full bg-sagesoft text-sage text-[14px] font-semibold flex items-center justify-center">2</span>
+                        <span class="text-[16px] sm:text-[17px] font-semibold text-ink">So sieht Ihr Ergebnis aus:</span>
+                    </div>
+
+                    <div id="resultCards" class="result-idle mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div class="bg-white border border-warmborder rounded-xl p-4 sm:p-5">
                             <span class="block text-[12px] font-medium text-muted mb-1">Ihre eigene Webseite</span>
                             <span id="previewDomain" class="text-[16px] font-semibold text-sage break-all">www.ihr-name.de</span>
@@ -365,7 +418,7 @@
                         </a>
                         <a href="mailto:Kontakt@Seidoweb.de?subject=Anfrage%20Webseite%20%26%20E-Mail"
                            class="inline-flex items-center justify-center px-6 py-4 min-h-[54px] rounded-2xl bg-white text-ink border border-warmborder text-[15px] font-medium hover:border-ink/40 transition-colors">
-                            E-Mail an Kontakt@Seidoweb.de
+                            E-Mail schreiben
                         </a>
                     </div>
 
@@ -380,10 +433,10 @@
                         <!-- WhatsApp / Telefon -->
                         <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                             <span class="text-[14px] font-medium text-muted">WhatsApp &amp; Telefon</span>
-                            <div class="flex items-center justify-between sm:justify-end gap-3">
+                            <div class="flex flex-wrap items-center justify-between sm:justify-end gap-x-3 gap-y-2">
                                 <a href="https://wa.me/4915904794051?text=Hallo%20Robin%2C%20ich%20interessiere%20mich%20f%C3%BCr%20eine%20eigene%20Webseite%20und%20E-Mail-Adresse."
                                    target="_blank" rel="noopener noreferrer"
-                                   class="text-[16px] font-medium text-ink hover:text-sage transition-colors">
+                                   class="text-[15px] sm:text-[16px] whitespace-nowrap font-medium text-ink hover:text-sage transition-colors">
                                     +49 1590 4794051
                                 </a>
                                 <button type="button" onclick="copyText('+49 1590 4794051', this)"
@@ -396,9 +449,9 @@
                         <!-- E-Mail -->
                         <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                             <span class="text-[14px] font-medium text-muted">E-Mail</span>
-                            <div class="flex items-center justify-between sm:justify-end gap-3">
+                            <div class="flex flex-wrap items-center justify-between sm:justify-end gap-x-3 gap-y-2">
                                 <a href="mailto:Kontakt@Seidoweb.de?subject=Anfrage%20Webseite%20%26%20E-Mail"
-                                   class="text-[16px] font-medium text-ink hover:text-sage transition-colors">
+                                   class="text-[15px] sm:text-[16px] whitespace-nowrap font-medium text-ink hover:text-sage transition-colors">
                                     Kontakt@Seidoweb.de
                                 </a>
                                 <button type="button" onclick="copyText('Kontakt@Seidoweb.de', this)"
@@ -434,16 +487,40 @@
                 .replace(/^-|-$/g, '');
         }
 
+        const fieldWrap = document.getElementById('fieldWrap');
+        const resultCards = document.getElementById('resultCards');
+        const tapHint = document.querySelector('.tap-hint');
+
+        function updatePreview() {
+            const slug = slugifyGerman(nameInput.value);
+            if (slug.length > 0) {
+                previewDomain.textContent = 'www.' + slug + '.de';
+                previewEmail.textContent = 'info@' + slug + '.de';
+                resultCards.classList.remove('result-idle');
+            } else {
+                previewDomain.textContent = 'www.ihr-name.de';
+                previewEmail.textContent = 'info@ihr-name.de';
+                resultCards.classList.add('result-idle');
+            }
+        }
+
+        function setActive() {
+            const active = document.activeElement === nameInput || nameInput.value.length > 0;
+            fieldWrap.classList.toggle('active', active);
+        }
+
         if (nameInput) {
+            nameInput.addEventListener('focus', function () {
+                fieldWrap.classList.remove('pulse');
+                if (tapHint) tapHint.classList.add('done');
+                setActive();
+            });
+            nameInput.addEventListener('blur', setActive);
             nameInput.addEventListener('input', function () {
-                const slug = slugifyGerman(this.value);
-                if (slug.length > 0) {
-                    previewDomain.textContent = 'www.' + slug + '.de';
-                    previewEmail.textContent = 'info@' + slug + '.de';
-                } else {
-                    previewDomain.textContent = 'www.ihr-name.de';
-                    previewEmail.textContent = 'info@ihr-name.de';
-                }
+                fieldWrap.classList.remove('pulse');
+                if (tapHint) tapHint.classList.add('done');
+                updatePreview();
+                setActive();
             });
         }
 
